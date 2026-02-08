@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Market Condition Classifier | EA Control Dashboard</title>
+    <meta name="description"
+        content="Know when to turn your EA on or off based on volatility, trend strength, and news events">
+    <link rel="stylesheet" href="index.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <h1 class="logo">⚡ Market Classifier</h1>
+                <span class="api-status" id="api-status">⏳ Connecting...</span>
+            </div>
+            <div class="time-display">
+                <span id="current-time"></span>
+                <span class="session-badge" id="session-badge">LOADING</span>
+            </div>
+        </header>
+
+        <!-- Master Signal -->
+        <section class="master-signal" id="master-signal">
+            <div class="signal-content">
+                <div class="signal-icon" id="master-icon">⏳</div>
+                <div class="signal-info">
+                    <h2 class="signal-title" id="master-title">Analyzing...</h2>
+                    <p class="signal-desc" id="master-desc">Checking market conditions</p>
+                </div>
+            </div>
+            <div class="signal-recommendation" id="master-recommendation">
+                LOADING
+            </div>
+        </section>
+
+        <!-- Category Filter -->
+        <section class="category-filter" id="category-filter">
+            <button class="category-btn active" data-category="all">All</button>
+            <button class="category-btn" data-category="forex">💱 Forex</button>
+            <button class="category-btn" data-category="commodity">🥇 Commodities</button>
+            <button class="category-btn" data-category="crypto">₿ Crypto</button>
+            <button class="category-btn" data-category="index">📊 Indices</button>
+        </section>
+
+        <!-- Instrument Selector -->
+        <section class="instrument-selector">
+            <label>Select Instrument:</label>
+            <div class="instrument-buttons" id="instrument-buttons">
+                <!-- Dynamically populated -->
+            </div>
+        </section>
+
+        <!-- Indicator Panels -->
+        <div class="indicators-grid">
+            <!-- Volatility Meter -->
+            <section class="indicator-panel" id="volatility-panel">
+                <div class="panel-header">
+                    <div class="panel-icon">📊</div>
+                    <h3>Volatility Meter</h3>
+                    <div class="signal-light" id="volatility-light">⚪</div>
+                </div>
+                <div class="panel-body">
+                    <div class="metric-row">
+                        <span class="metric-label">ATR Level</span>
+                        <span class="metric-value" id="atr-value">--</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">vs 20-day Avg</span>
+                        <span class="metric-value" id="atr-percent">--</span>
+                    </div>
+                    <div class="volatility-bar">
+                        <div class="bar-fill" id="volatility-fill"></div>
+                        <div class="bar-zones">
+                            <span>Low</span>
+                            <span>Normal</span>
+                            <span>High</span>
+                        </div>
+                    </div>
+                    <p class="panel-advice" id="volatility-advice">Checking volatility...</p>
+                </div>
+            </section>
+
+            <!-- Trend Strength -->
+            <section class="indicator-panel" id="trend-panel">
+                <div class="panel-header">
+                    <div class="panel-icon">📈</div>
+                    <h3>Trend Strength</h3>
+                    <div class="signal-light" id="trend-light">⚪</div>
+                </div>
+                <div class="panel-body">
+                    <div class="metric-row">
+                        <span class="metric-label">ADX Value</span>
+                        <span class="metric-value" id="adx-value">--</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Direction</span>
+                        <span class="metric-value" id="trend-direction">--</span>
+                    </div>
+                    <div class="trend-gauge">
+                        <div class="gauge-indicator" id="trend-indicator"></div>
+                        <div class="gauge-labels">
+                            <span>Ranging</span>
+                            <span>Trending</span>
+                            <span>Strong</span>
+                        </div>
+                    </div>
+                    <p class="panel-advice" id="trend-advice">Checking trend...</p>
+                </div>
+            </section>
+
+            <!-- News Monitor -->
+            <section class="indicator-panel" id="news-panel">
+                <div class="panel-header">
+                    <div class="panel-icon">📰</div>
+                    <h3>News Monitor</h3>
+                    <div class="signal-light" id="news-light">⚪</div>
+                </div>
+                <div class="panel-body">
+                    <div class="metric-row">
+                        <span class="metric-label">Next Event</span>
+                        <span class="metric-value" id="next-event">--</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Time Until</span>
+                        <span class="metric-value countdown" id="event-countdown">--</span>
+                    </div>
+                    <div class="news-list" id="news-list">
+                        <div class="news-item skeleton"></div>
+                        <div class="news-item skeleton"></div>
+                    </div>
+                    <p class="panel-advice" id="news-advice">Checking calendar...</p>
+                </div>
+            </section>
+        </div>
+
+        <!-- Quick Actions -->
+        <section class="quick-actions">
+            <div class="action-buttons">
+                <button class="action-btn refresh-btn" id="refresh-btn">
+                    🔄 Refresh Now
+                </button>
+                <button class="action-btn toggle-btn" id="toggle-data-source">
+                    📡 Live
+                </button>
+            </div>
+            <div class="auto-refresh">
+                <span>Auto-refresh in</span>
+                <span id="refresh-countdown">240s</span>
+            </div>
+        </section>
+
+        <!-- Trading Sessions Info -->
+        <section class="sessions-info">
+            <h3>📍 Current Session Activity</h3>
+            <div class="sessions-grid">
+                <div class="session-card" id="session-sydney">
+                    <span class="session-name">🇦🇺 Sydney</span>
+                    <span class="session-status">--</span>
+                </div>
+                <div class="session-card" id="session-tokyo">
+                    <span class="session-name">🇯🇵 Tokyo</span>
+                    <span class="session-status">--</span>
+                </div>
+                <div class="session-card" id="session-london">
+                    <span class="session-name">🇬🇧 London</span>
+                    <span class="session-status">--</span>
+                </div>
+                <div class="session-card" id="session-newyork">
+                    <span class="session-name">🇺🇸 New York</span>
+                    <span class="session-status">--</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- API Setup Guide -->
+        <section class="api-setup collapsed" id="api-setup">
+            <div class="setup-header" onclick="toggleSetup()">
+                <h3>🔧 API Setup (Optional)</h3>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="setup-content">
+                <p>Get free API keys for real-time data:</p>
+                <div class="api-instructions">
+                    <div class="api-item">
+                        <strong>Twelve Data</strong> (ATR/ADX indicators)
+                        <a href="https://twelvedata.com/" target="_blank">Get Free Key →</a>
+                        <small>800 credits/day free</small>
+                    </div>
+                    <div class="api-item">
+                        <strong>Finnhub</strong> (Economic Calendar)
+                        <a href="https://finnhub.io/" target="_blank">Get Free Key →</a>
+                        <small>60 calls/minute free</small>
+                    </div>
+                </div>
+                <p class="setup-note">Add your keys in <code>index.js</code> → <code>API_CONFIG</code></p>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>⚠️ This tool provides guidance only. Always manage your risk.</p>
+            <p class="last-update">Last updated: <span id="last-update">--</span></p>
+        </footer>
+    </div>
+
+    <script>
+        function toggleSetup() {
+            document.getElementById('api-setup').classList.toggle('collapsed');
+        }
+    </script>
+    <script src="index.js"></script>
+</body>
+
+</html>

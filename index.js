@@ -601,6 +601,107 @@ function updateApiStatus() {
     statusEl.className = `api-status ${statusClass}`;
 }
 
+// ========================================
+// Quick Insights (No Extra API Calls)
+// ========================================
+
+function updateQuickInsights(volatility, trend, news, master) {
+    // 1. Best Trading Time - Based on session overlaps
+    const bestTimeEl = document.getElementById('best-time');
+    const bestTimeDetailEl = document.getElementById('best-time-detail');
+
+    const now = new Date();
+    const utcHour = now.getUTCHours();
+
+    // Session overlap windows (most liquid)
+    const isLondonNY = utcHour >= 12 && utcHour < 16;
+    const isTokyoLondon = utcHour >= 7 && utcHour < 9;
+    const isNowGood = master.signal === 'green' || master.signal === 'yellow';
+
+    if (isLondonNY && isNowGood) {
+        bestTimeEl.textContent = 'NOW ✓';
+        bestTimeEl.className = 'insight-value positive';
+        bestTimeDetailEl.textContent = 'London/NY overlap - Peak liquidity';
+    } else if (isTokyoLondon && isNowGood) {
+        bestTimeEl.textContent = 'NOW ✓';
+        bestTimeEl.className = 'insight-value positive';
+        bestTimeDetailEl.textContent = 'Tokyo/London overlap - Good flow';
+    } else if (isLondonNY || isTokyoLondon) {
+        bestTimeEl.textContent = 'Wait';
+        bestTimeEl.className = 'insight-value warning';
+        bestTimeDetailEl.textContent = 'Good session, but conditions risky';
+    } else if (utcHour >= 12 && utcHour < 21) {
+        bestTimeEl.textContent = 'In 0-4h';
+        bestTimeEl.className = 'insight-value';
+        bestTimeDetailEl.textContent = 'NY session active';
+    } else if (utcHour >= 7 && utcHour < 16) {
+        bestTimeEl.textContent = 'In 0-4h';
+        bestTimeEl.className = 'insight-value';
+        bestTimeDetailEl.textContent = 'London session active';
+    } else {
+        const hoursToLondon = (7 - utcHour + 24) % 24;
+        bestTimeEl.textContent = `In ${hoursToLondon}h`;
+        bestTimeEl.className = 'insight-value';
+        bestTimeDetailEl.textContent = 'London open recommended';
+    }
+
+    // 2. Risk Level - Combined score from all indicators
+    const riskEl = document.getElementById('risk-level');
+    const riskDetailEl = document.getElementById('risk-detail');
+
+    let riskScore = 0;
+    let riskFactors = [];
+
+    if (volatility.signal === 'red') { riskScore += 3; riskFactors.push('High volatility'); }
+    else if (volatility.signal === 'yellow') { riskScore += 1; }
+
+    if (trend.signal === 'red') { riskScore += 2; riskFactors.push('No clear trend'); }
+    else if (trend.signal === 'yellow') { riskScore += 1; }
+
+    if (news.signal === 'red') { riskScore += 3; riskFactors.push('News imminent'); }
+    else if (news.signal === 'yellow') { riskScore += 1; riskFactors.push('News approaching'); }
+
+    if (riskScore <= 1) {
+        riskEl.textContent = 'LOW';
+        riskEl.className = 'insight-value positive';
+        riskDetailEl.textContent = 'All conditions favorable';
+    } else if (riskScore <= 3) {
+        riskEl.textContent = 'MEDIUM';
+        riskEl.className = 'insight-value warning';
+        riskDetailEl.textContent = riskFactors[0] || 'Mixed conditions';
+    } else {
+        riskEl.textContent = 'HIGH';
+        riskEl.className = 'insight-value negative';
+        riskDetailEl.textContent = riskFactors.slice(0, 2).join(', ') || 'Multiple risk factors';
+    }
+
+    // 3. Quick Tip - Actionable advice based on conditions
+    const tipEl = document.getElementById('quick-tip');
+    const tipDetailEl = document.getElementById('tip-detail');
+
+    const tips = [];
+
+    if (master.signal === 'green') {
+        tips.push({ tip: 'Trade normally', detail: 'All systems go' });
+    } else if (master.signal === 'yellow') {
+        if (volatility.signal === 'yellow') tips.push({ tip: 'Reduce lot size', detail: 'Volatility is elevated' });
+        if (news.signal === 'yellow') tips.push({ tip: 'Widen stops', detail: 'News may cause spikes' });
+        if (trend.signal === 'yellow') tips.push({ tip: 'Wait for breakout', detail: 'Market is ranging' });
+    } else {
+        if (news.signal === 'red') tips.push({ tip: 'Close positions', detail: 'High-impact news soon' });
+        else if (volatility.signal === 'red') tips.push({ tip: 'Sit this out', detail: 'Volatility too extreme' });
+        else tips.push({ tip: 'Wait for clarity', detail: 'Conditions unfavorable' });
+    }
+
+    const selectedTip = tips[0] || { tip: 'Analyzing...', detail: 'Checking conditions' };
+    tipEl.textContent = selectedTip.tip;
+    tipDetailEl.textContent = selectedTip.detail;
+
+    if (master.signal === 'green') tipEl.className = 'insight-value positive';
+    else if (master.signal === 'yellow') tipEl.className = 'insight-value warning';
+    else tipEl.className = 'insight-value negative';
+}
+
 function updateInstrumentButtons() {
     const container = document.getElementById('instrument-buttons');
     container.innerHTML = '';
@@ -695,6 +796,7 @@ async function refreshData() {
 
         // Update UI
         updateUI(volatility, trend, news, master);
+        updateQuickInsights(volatility, trend, news, master);
 
     } catch (error) {
         console.error('[Refresh] Error:', error);
@@ -708,6 +810,7 @@ async function refreshData() {
         const master = calculateMasterSignal(volatility, trend, news);
 
         updateUI(volatility, trend, news, master);
+        updateQuickInsights(volatility, trend, news, master);
     }
 
     // Reset countdown
